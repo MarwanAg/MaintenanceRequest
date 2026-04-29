@@ -4,6 +4,7 @@ using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260428225452_updateSystemRoles")]
+    partial class updateSystemRoles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -271,19 +274,19 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.MaintenanceRequest", b =>
                 {
                     b.HasOne("Domain.Entities.Category", "Category")
-                        .WithMany("MaintenanceRequests")
+                        .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.User", "Employee")
-                        .WithMany("CreatedRequests")
+                        .WithMany()
                         .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Domain.Entities.User", "Technician")
-                        .WithMany("AssignedTasks")
+                        .WithMany()
                         .HasForeignKey("TechnicianId")
                         .OnDelete(DeleteBehavior.Restrict);
 
@@ -297,8 +300,8 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.RequestDetail", b =>
                 {
                     b.HasOne("Domain.Entities.MaintenanceRequest", "Request")
-                        .WithOne("RequestDetail")
-                        .HasForeignKey("Domain.Entities.RequestDetail", "RequestId")
+                        .WithMany()
+                        .HasForeignKey("RequestId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -367,23 +370,11 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Category", b =>
                 {
-                    b.Navigation("MaintenanceRequests");
-
                     b.Navigation("TechnicianCategories");
-                });
-
-            modelBuilder.Entity("Domain.Entities.MaintenanceRequest", b =>
-                {
-                    b.Navigation("RequestDetail")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
-                    b.Navigation("AssignedTasks");
-
-                    b.Navigation("CreatedRequests");
-
                     b.Navigation("TechnicianCategories");
                 });
 #pragma warning restore 612, 618

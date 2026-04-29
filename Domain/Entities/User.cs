@@ -13,5 +13,10 @@ namespace Domain.Entities
         public Guid RoleId { get; set; }
         [ForeignKey("RoleId")]
         public Role Role { get; set; }
+
+        public virtual ICollection<TechnicianCategory> TechnicianCategories { get; set; } = new List<TechnicianCategory>();
+
+        public virtual ICollection<MaintenanceRequest> CreatedRequests { get; set; } = new List<MaintenanceRequest>();
+        public virtual ICollection<MaintenanceRequest> AssignedTasks { get; set; } = new List<MaintenanceRequest>();
     }
 }
