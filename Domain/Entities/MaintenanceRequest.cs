@@ -23,5 +23,7 @@ namespace Domain.Entities
         public Category Category { get; set; }
 
         public DateTime CreatedAt { get; set; }
+
+        public virtual RequestDetail RequestDetail { get; set; }
     }
 }
