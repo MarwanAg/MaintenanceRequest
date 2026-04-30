@@ -34,7 +34,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("CreateRequest")]
-        public async Task<IActionResult> CreateRequest(CreateRequestDto input)
+        public async Task<IActionResult> CreateRequest([FromForm]CreateRequestDto input)
         {
             await _requestService.CreateRequest(input);
             return Ok();

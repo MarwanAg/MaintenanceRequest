@@ -12,6 +12,7 @@ using Infrastructure.Context;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -90,11 +91,30 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+
+//Set-up static files for external storage
+var externalImagesPath = builder.Configuration["FileStorage:ImagesPath"];
+
+if (string.IsNullOrEmpty(externalImagesPath))
+{
+    throw new Exception("FileStorage:ImagesPath is missing in appsettings.json");
+}
+
+if (!Directory.Exists(externalImagesPath))
+{
+    Directory.CreateDirectory(externalImagesPath);
+}
+
+app.UseStaticFiles();
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(externalImagesPath),
+    RequestPath = "/external-images"
+});
+
 app.UseSwagger();
 app.UseSwaggerUI();
-
-// Configure the HTTP request pipeline.
-
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

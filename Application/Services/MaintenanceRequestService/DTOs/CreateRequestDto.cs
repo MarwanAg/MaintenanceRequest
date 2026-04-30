@@ -7,5 +7,6 @@
         public string Location { get; set; }
         public Guid EmployeeId { get; set; }
         public Guid CategoryId { get; set; }
+        public RequestDetailDto RequestDetail { get; set; }
     }
 }

@@ -2,7 +2,9 @@
 using Application.Services.MaintenanceRequestService.DTOs;
 using Domain.Entities;
 using Domain.Enums;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens.Experimental;
 
 namespace Application.Services.MaintenanceRequestService
@@ -10,12 +12,17 @@ namespace Application.Services.MaintenanceRequestService
     public class MaintenanceRequestService : IMaintenanceRequestService
     {
         private readonly IGenericRepository<MaintenanceRequest> _requestRepository;
+        private readonly IGenericRepository<RequestDetail> _requestDetailRepository;
         private readonly IGenericRepository<TechnicianCategory> _techCategoryRepository;
-
-        public MaintenanceRequestService(IGenericRepository<MaintenanceRequest> requestRepository, IGenericRepository<TechnicianCategory> techCategoryRepository)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IConfiguration _configuration;
+        public MaintenanceRequestService(IGenericRepository<MaintenanceRequest> requestRepository, IGenericRepository<TechnicianCategory> techCategoryRepository, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, IGenericRepository<RequestDetail> requestDetailRepository)
         {
             _requestRepository = requestRepository;
             _techCategoryRepository = techCategoryRepository;
+            _httpContextAccessor = httpContextAccessor;
+            _requestDetailRepository = requestDetailRepository;
+            _configuration = configuration;
         }
 
         public async Task CreateRequest(CreateRequestDto input)
@@ -30,20 +37,60 @@ namespace Application.Services.MaintenanceRequestService
                 CategoryId = input.CategoryId,
                 Status = RequestStatus.New,
                 CreatedAt = DateTime.UtcNow,
-
-                RequestDetail = new RequestDetail
-                {
-                    Id = Guid.NewGuid(),
-                    Location = input.Location, 
-                    EmployeeNotes = input.Description, 
-                    TechnicianNotes = "", 
-                    ImageURL = null
-                }
-
             };
 
             await _requestRepository.InsertAsync(data);
             await _requestRepository.SaveChangesAsync();
+
+            string? imageUrl = null;
+            if (input.RequestDetail.ImageURL != null) {
+                imageUrl = await SaveImageAsync(input.RequestDetail.ImageURL); 
+            }
+
+            var requestDetail = new RequestDetail
+            {
+                Id = Guid.NewGuid(),
+                RequestId = data.Id,
+                Location = input.RequestDetail.Location,
+                EmployeeNotes = input.RequestDetail.EmployeeNotes,
+                TechnicianNotes = "",
+                ImageURL = imageUrl
+            };
+            await _requestDetailRepository.InsertAsync(requestDetail);
+            await _requestDetailRepository.SaveChangesAsync();
+        }
+
+        private async Task<string?> SaveImageAsync(IFormFile? imageFile)
+        {
+            if (imageFile == null || imageFile.Length == 0) return null;
+
+            var baseUploadPath = _configuration["FileStorage:ImagesPath"];
+            var uploadsFolder = Path.Combine(baseUploadPath, "Requests");
+
+            if (string.IsNullOrEmpty(baseUploadPath))
+            {
+                throw new Exception("The image storage path is not defined!");
+            }
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
+            var filePath = Path.Combine(uploadsFolder, fileName);
+            
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await imageFile.CopyToAsync(fileStream);
+            }
+
+            var request = _httpContextAccessor.HttpContext?.Request;
+            if (request == null) return fileName;
+
+            var baseURL = $"{request.Scheme}://{request.Host}";
+
+            return $"{baseURL}/external-images/{fileName}";
         }
 
         public async Task AssignTechnicianToRequest(Guid requestId, Guid technicianId)
